@@ -1,0 +1,100 @@
+rules_version = '2';
+
+// ============================================
+// FIRESTORE SECURITY RULES
+// ============================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true;
+    }
+    
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // ========== USERS COLLECTION ==========
+    // Users can read any profile (for public profiles, following, etc.)
+    // Users can write only their own profile
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // ========== NASHEEDS COLLECTION ==========
+    // Public read for approved nasheeds (anyone can browse/listen)
+    // Authenticated users can create nasheeds (upload)
+    // Only admins can approve/reject nasheeds
+    // Users can update their own pending nasheeds
+    match /nasheeds/{nasheedId} {
+      // Anyone can read approved nasheeds
+      // Authenticated users can read pending/rejected (to see their own uploads)
+      // Admins can read all nasheeds
+      allow read: if resource.data.status == 'approved' || 
+                     (request.auth != null && request.auth.uid == resource.data.uploadedBy) ||
+                     isAdmin();
+      
+      // Authenticated users can create nasheeds
+      allow create: if request.auth != null && 
+                       request.resource.data.uploadedBy == request.auth.uid &&
+                       request.resource.data.status == 'pending';
+      
+      // Users can update their own pending nasheeds
+      // Admins can update any nasheed (approve/reject)
+      allow update: if request.auth != null && (
+        (request.auth.uid == resource.data.uploadedBy && resource.data.status == 'pending') ||
+        isAdmin()
+      );
+      
+      // Only admins can delete nasheeds
+      allow delete: if isAdmin();
+    }
+    
+    // ========== PLAYLISTS COLLECTION ==========
+    // Public playlists are readable by all authenticated users
+    // Private playlists are readable only by owner
+    // Users can create and manage their own playlists
+    match /playlists/{playlistId} {
+      // Public playlists: readable by all authenticated users
+      // Private playlists: readable only by owner
+      allow read: if request.auth != null && (
+        resource.data.public == true || 
+        resource.data.userId == request.auth.uid
+      );
+      
+      // Users can create playlists (must set userId to their own)
+      allow create: if request.auth != null && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Users can update/delete their own playlists
+      allow update, delete: if request.auth != null && 
+                               resource.data.userId == request.auth.uid;
+    }
+    
+    // ========== LIKES COLLECTION (if you add this feature) ==========
+    // Users can like/unlike nasheeds
+    match /likes/{likeId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+                       request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && 
+                       resource.data.userId == request.auth.uid;
+    }
+    
+    // ========== COMMENTS COLLECTION (if you add this feature) ==========
+    // Users can comment on nasheeds
+    match /comments/{commentId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+                       request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && 
+                               resource.data.userId == request.auth.uid;
+    }
+  }
+}

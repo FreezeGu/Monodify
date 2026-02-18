@@ -35,6 +35,9 @@ export const uploadToImgBB = async (file) => {
     const params = new URLSearchParams();
     params.append('key', IMGBB_API_KEY);
     params.append('image', base64Image);
+    // Request full resolution (no compression)
+    // Note: ImgBB may still compress very large images, but this requests best quality
+    params.append('expiration', '0'); // No expiration for permanent storage
 
     // Upload to ImgBB
     const response = await fetch('https://api.imgbb.com/1/upload', {
@@ -72,12 +75,17 @@ export const uploadToImgBB = async (file) => {
       throw new Error('Invalid response from image server');
     }
 
+    // Use the full resolution URL (data.data.url) as primary
+    // display_url is compressed, url is original resolution
     return {
-      url: data.data.url,
-      displayUrl: data.data.display_url || data.data.url,
+      url: data.data.url || data.data.image?.url, // Full resolution original image
+      displayUrl: data.data.display_url, // Compressed version (for reference only)
       deleteUrl: data.data.delete_url, // For future deletion if needed
       id: data.data.id,
       thumbUrl: data.data.thumb?.url, // Thumbnail URL if available
+      size: data.data.size, // Original file size
+      width: data.data.width, // Original width
+      height: data.data.height, // Original height
     };
   } catch (error) {
     console.error('ImgBB upload error:', error);

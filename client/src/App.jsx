@@ -4,11 +4,14 @@ import { AnimatePresence } from 'framer-motion';
 import { BackgroundProvider, useBackground } from './context/BackgroundContext';
 import { PlayerProvider, usePlayer } from './context/PlayerContext';
 import { TabNavigationProvider } from './context/TabNavigationContext';
+import { AuthProvider } from './context/AuthContext';
 import Featured from './pages/Featured';
 import SearchResults from './pages/SearchResults';
 import Playlists from './pages/Playlists';
 import Profile from './pages/Profile';
 import Upload from './pages/Upload';
+import UploadNasheed from './pages/UploadNasheed';
+import AdminPanel from './pages/AdminPanel';
 import Queue from './pages/Queue';
 import Lyrics from './pages/Lyrics';
 import AlbumPage from './pages/AlbumPage';
@@ -52,6 +55,8 @@ function AppLayout() {
               <Route path="/search/results" element={<SearchResults />} />
               <Route path="/playlists" element={<Playlists />} />
               <Route path="/upload" element={<Upload />} />
+              <Route path="/upload-nasheed" element={<UploadNasheed />} />
+              <Route path="/admin" element={<AdminPanel />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/queue" element={<Queue />} />
               <Route path="/lyrics" element={<Lyrics />} />
@@ -73,12 +78,14 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <BackgroundProvider>
-      <PlayerProvider>
-        <TabNavigationProvider>
-          <AppLayout />
-        </TabNavigationProvider>
-      </PlayerProvider>
-    </BackgroundProvider>
+    <AuthProvider>
+      <BackgroundProvider>
+        <PlayerProvider>
+          <TabNavigationProvider>
+            <AppLayout />
+          </TabNavigationProvider>
+        </PlayerProvider>
+      </BackgroundProvider>
+    </AuthProvider>
   );
 }

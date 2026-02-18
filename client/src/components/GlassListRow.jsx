@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-export default function GlassListRow({ 
+const GlassListRow = memo(function GlassListRow({ 
   children, 
   onClick, 
   className = '',
@@ -24,4 +24,6 @@ export default function GlassListRow({
       {rightContent && <div className="glass-list-row-right">{rightContent}</div>}
     </div>
   );
-}
+});
+
+export default GlassListRow;

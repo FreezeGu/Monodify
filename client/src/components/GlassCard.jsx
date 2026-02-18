@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-export default function GlassCard({ 
+const GlassCard = memo(function GlassCard({ 
   children, 
   onClick, 
   className = '',
@@ -21,4 +21,6 @@ export default function GlassCard({
       {children}
     </div>
   );
-}
+});
+
+export default GlassCard;

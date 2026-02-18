@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "monody-nasheeds",
+  "private_key_id": "b3371f842eeb5665450bd38573f952497e512e96",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDP56IJES8y6QZi\n7E7EWJPM/aSyBfMEKtnfHiOSZ7J/c8UrGpbbB2AferQiFefhuhht9MKp3A5REK7/\nozl4JCrJqPT/tYgnMi2jeNiyC7+gStbBvmA7feAv26DcfANGBKytAJT6/0a2/StX\nwzn+6KeU7uEOyy+cXrLDGfNbDBN3M0F/uCwW3pWEAbXRHBm3ExdofeAsjGPcqPRY\nOUwrswRik/WQJN9V7+o7QPbGGNXmurAEnJoSInOWhcM2MD2FiSmL8GQY41QLgPSr\ncs8QBmuvKf+0UiZ7B8O7qmtKB3lX2mca3t6ANNrSEJ6IcZ7xcPugRphUUTYMldkf\nU4nemnD3AgMBAAECggEAIPAyxLr7Plaa02ta41KhP/XjdOzqXnunfujYe+Z/6h9e\nWoDg65yUhwg6p7fOv/1qx2jiumSJxCAfiZLDlRwtxztEbYrGImeZwW9w7WxdFLkm\noxVVS7eaoBpstuHS5vHwpYwVDlsJSg58InBkrNURT9A0ydI5Hc4HBlADNSaJovWr\nzEyD4TshtDzudZZ828XA5lRbskTuUOkoeOYILboIxSrzOfxkVYl2yUNJVK6NMlBP\nyayxNhpR3HsSc6/rV7mRsG9R+n1aCjgWE+w0T31sW6cpX7Lr0/3NWENsQEVieciF\nPhZ1rWNWPwt14vM59PwjMsSXEPYFEw/nxc2GfAr1sQKBgQDpxkiNdIxe9c5VN4+f\nlCnRuvXd1BFmLS2D/8XHJjsaDjv6PRBEHAsN9TFNMXiV23LfWBtin5R/0LA5HphH\nS/pnDG6RF/PO9CiHVj0F30aY1BXiiJLIX7+2oEuTN7tPPa/We3/LBlLmLuVYmlzL\nlXELcLsTuTXv7TVyaW3lktmTGQKBgQDjq7hAO9PBdN0XA7FZ2wypQpfctKC/wRls\nTPMDJCKFPHWPECADmG3KSCFmXrT2xUuPb2u4OqvvN2ZeW+F1rclnyioQf+d+ZTrI\nm6T6MFYz0yBqnirUKP/G72pFho7dRVz15KL1f6CHR63TpAmcDSxWrobpVd8KCN3N\n2jtvvZo2jwKBgQDPN7+gA6tZkTEwQGvC3Caljb/avdweYfVyiAncGXtSAUQQ8Ie2\nl9UErk7hSfTFgRw19Xdw2FtdYLKULxZ0PFjddxua6UxoKeyy6jJ1PhDp7zTm9ICH\ntLfPPg8/k6so9lkjGZ2RbS2WdAM/orSWkQT/SxHIzeeNoQo7PFD5qk3KIQKBgQDh\nkMndAilb21ANNEBreUaDEBJrvZ4iPcvVbCu8qfl1rh//HQfK6COmrW5CAYUjlPe2\n5bqA7chZGrdWt4uaTxNjvH2OmVqe9OaXyPVcV7WgZQYR/CEM0I4R6DSPK7Cx874V\ndXAq8Ub3oQHM1RIcRUTvoLzTw5tWUtCG2jfXDrASawKBgA+02UcWvlmEZNI0wpx/\n9w8+I4hML6lCVpKNuG42gLISN7I120mV/Y/P/xo9JZp7YxSgZIMYY7EgE/H5EKf3\nMU96LrbHZ9JpuiVZw/WiU63e/r+fGzwU88U2xbZ0mtfGwKlPCfMMSjsLBv/7ioTJ\nlAgt/QedtBQ4iGbPORB3Gutc\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@monody-nasheeds.iam.gserviceaccount.com",
+  "client_id": "101474186440177776131",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40monody-nasheeds.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

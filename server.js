@@ -8,7 +8,7 @@ const clientDist = path.join(__dirname, 'client', 'dist');
 const hasClientBuild = fs.existsSync(clientDist);
 
 // API (for future auth, uploads to server, etc.)
-app.get('/api/health', (req, res) => res.json({ ok: true, app: 'Monody' }));
+app.get('/api/health', (req, res) => res.json({ ok: true, app: 'Monodify' }));
 
 // Static files from project root (legacy / shared assets)
 app.use('/static', express.static(path.join(__dirname, 'static')));
@@ -34,7 +34,7 @@ server.on('error', (err) => {
     console.log(`Port ${PORT} in use, trying port 0 (random available)…`);
     app.listen(0, () => {
       const addr = server.address() || {};
-      console.log(`Monody running at http://127.0.0.1:${addr.port || 'random'}`);
+      console.log(`Monodify running at http://127.0.0.1:${addr.port || 'random'}`);
     });
   } else {
     throw err;

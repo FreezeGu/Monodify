@@ -1,18 +1,24 @@
 {
-  "name": "monody",
+  "name": "monodify",
   "version": "1.0.0",
-  "description": "Monody — Nasheed app with liquid glass UI",
+  "description": "Monodify — Nasheed app with liquid glass UI",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
     "build": "cd client && npm install && npm run build",
-    "dev:client": "cd client && npm run dev"
+    "build:clean": "node -e \"try{require('fs').rmSync('client/dist',{recursive:true,force:true})}catch(e){}\" && cd client && npm install && npm run build",
+    "deploy": "npm run build:clean && firebase deploy --only hosting",
+    "dev:client": "cd client && npm run dev",
+    "setup-cors": "node set-cors.js"
   },
   "dependencies": {
     "express": "^4.21.0",
     "framer-motion": "^12.34.1",
     "react": "^19.2.4",
     "react-router-dom": "^7.13.0"
+  },
+  "devDependencies": {
+    "@google-cloud/storage": "^7.19.0"
   }
 }

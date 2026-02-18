@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTabNavigation } from '../context/TabNavigationContext';
 import { usePlayer } from '../context/PlayerContext';
 import LiquidGlassToggle from './LiquidGlassToggle';
+import SynchronizedLyrics from './SynchronizedLyrics';
+import AddToPlaylist from './AddToPlaylist';
 
 const spring = { type: 'spring', damping: 28, stiffness: 300 };
 
@@ -22,6 +24,9 @@ export default function FullScreenPlayer() {
     setLiveLyricsOn,
     liveLyricsText,
     setLiveLyricsText,
+    lyricsData,
+    lyricsLanguage,
+    setLyricsLanguage,
     nextTrack,
     previousTrack,
     repeatMode,
@@ -29,8 +34,23 @@ export default function FullScreenPlayer() {
     shuffle,
     setShuffle,
   } = usePlayer();
+  const FAVORITES_KEY = 'monody-favorites';
   const [isFavorite, setIsFavorite] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [showAddToPlaylist, setShowAddToPlaylist] = useState(false);
+
+  // Load favorite status on mount
+  useEffect(() => {
+    if (currentTrack?.id) {
+      try {
+        const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+        const favoriteIds = favorites.map(f => f.id);
+        setIsFavorite(favoriteIds.includes(currentTrack.id));
+      } catch (_) {
+        setIsFavorite(false);
+      }
+    }
+  }, [currentTrack]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -138,79 +158,175 @@ export default function FullScreenPlayer() {
       </motion.button>
 
       {/* Main content — liquid glass panel (Apple-style slide up from bottom) */}
-      <motion.div
-        className="liquid-glass-panel glass-distort"
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          flex: 1,
-          margin: '0 20px 20px',
-          padding: '24px 20px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          minHeight: 0,
-        }}
-        initial={{ y: '100%', opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: '100%', opacity: 0 }}
-        transition={spring}
-      >
-        {/* Artwork */}
-        <motion.div
-          style={{
-            width: 'min(280px, 75vw)',
-            height: 'min(280px, 75vw)',
-            borderRadius: 16,
-            background: art ? `url(${art}) center/cover` : 'rgba(255,255,255,0.1)',
-            marginBottom: 24,
-            boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
-          }}
-          layout
-        />
+      <AnimatePresence mode="wait">
+        {liveLyricsOn && lyricsData && (lyricsData.original?.length > 0 || lyricsData.translated?.length > 0) ? (
+          // Full-screen lyrics view
+          <motion.div
+            key="lyrics-view"
+            className="liquid-glass-panel glass-distort"
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              flex: 1,
+              margin: '0 20px 20px',
+              padding: '24px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              minHeight: 0,
+            }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          >
+            {/* Switcher and controls */}
+            <div style={{ width: '100%', marginBottom: 24 }}>
+              {/* Language selector and toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
+                {lyricsData.translated?.length > 0 ? (
+                  <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 8, padding: 4 }}>
+                    <button
+                      type="button"
+                      onClick={() => setLyricsLanguage('original')}
+                      style={{
+                        padding: '6px 16px',
+                        borderRadius: 6,
+                        fontSize: 13,
+                        fontWeight: lyricsLanguage === 'original' ? 600 : 400,
+                        background: lyricsLanguage === 'original' ? 'rgba(255,255,255,0.2)' : 'transparent',
+                        color: 'var(--primary-text)',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Arabic
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLyricsLanguage('translated')}
+                      style={{
+                        padding: '6px 16px',
+                        borderRadius: 6,
+                        fontSize: 13,
+                        fontWeight: lyricsLanguage === 'translated' ? 600 : 400,
+                        background: lyricsLanguage === 'translated' ? 'rgba(255,255,255,0.2)' : 'transparent',
+                        color: 'var(--primary-text)',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      English
+                    </button>
+                  </div>
+                ) : null}
+                <LiquidGlassToggle on={liveLyricsOn} onChange={setLiveLyricsOn} />
+              </div>
+              
+              {/* Title and Author */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
+                style={{ textAlign: 'center' }}
+              >
+                <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8, color: 'var(--primary-text)' }}>
+                  {title}
+                </h2>
+                <p className="text-secondary" style={{ fontSize: 16, color: 'var(--secondary-text)' }}>
+                  {artist}
+                </p>
+              </motion.div>
+            </div>
+            
+            <SynchronizedLyrics lyrics={lyricsData} currentTime={currentTime} language={lyricsLanguage} />
+          </motion.div>
+        ) : (
+          // Regular player view
+          <motion.div
+            key="player-view"
+            className="liquid-glass-panel glass-distort"
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              flex: 1,
+              margin: '0 20px 20px',
+              padding: '24px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              minHeight: 0,
+            }}
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={spring}
+          >
+            {/* Artwork */}
+            <motion.div
+              style={{
+                width: 'min(280px, 75vw)',
+                height: 'min(280px, 75vw)',
+                borderRadius: 16,
+                background: art ? `url(${art}) center/cover` : 'rgba(255,255,255,0.1)',
+                marginBottom: 24,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+              }}
+              layout
+            />
 
-        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, textAlign: 'center' }}>{title}</h2>
-        <p className="text-secondary" style={{ fontSize: 16, marginBottom: 24 }}>{artist}</p>
+            <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, textAlign: 'center' }}>{title}</h2>
+            <p className="text-secondary" style={{ fontSize: 16, marginBottom: 24 }}>{artist}</p>
 
-        {/* Action Row: Heart, Lyrics, Queue */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, marginBottom: 24 }}>
-          <button
+        {/* Action Row: Add to playlist (plus) + Heart */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginBottom: 24 }}>
+          <motion.button
             type="button"
             className="liquid-glass-btn glass-btn-icon"
-            onClick={() => setIsFavorite(!isFavorite)}
+            onClick={() => setShowAddToPlaylist(true)}
+            aria-label="Add to playlist"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </motion.button>
+          <motion.button
+            type="button"
+            className="liquid-glass-btn glass-btn-icon"
+            onClick={() => {
+              if (!currentTrack?.id) return;
+              try {
+                const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+                const favoriteIds = favorites.map(f => f.id);
+                
+                if (isFavorite) {
+                  // Remove from favorites
+                  const updated = favorites.filter(f => f.id !== currentTrack.id);
+                  localStorage.setItem(FAVORITES_KEY, JSON.stringify(updated));
+                  setIsFavorite(false);
+                } else {
+                  // Add to favorites
+                  favorites.push({ id: currentTrack.id });
+                  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+                  setIsFavorite(true);
+                }
+              } catch (err) {
+                console.error('Error updating favorites:', err);
+              }
+            }}
             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            animate={{ scale: isFavorite ? 1.1 : 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
             </svg>
-          </button>
-          <button
-            type="button"
-            className="liquid-glass-btn glass-btn-icon"
-            onClick={() => push('/lyrics')}
-            aria-label="Lyrics"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-          </button>
-          <button
-            type="button"
-            className="liquid-glass-btn glass-btn-icon"
-            onClick={() => push('/queue')}
-            aria-label="Queue"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 18l2-2 2 2"></path>
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-          </button>
+          </motion.button>
         </div>
 
         {/* Liquid glass slider — progress */}
@@ -349,40 +465,114 @@ export default function FullScreenPlayer() {
               />
             </div>
           </div>
-          <button className="liquid-glass-btn" style={{ width: '100%', padding: '8px 16px', fontSize: 14 }}>
-            Output Device
-          </button>
         </div>
 
-        {/* Live subtitles — liquid glass toggle + panel */}
-        <div style={{ width: '100%', marginTop: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-            <span style={{ fontSize: 14, color: 'var(--secondary-text)' }}>Live subtitles</span>
-            <LiquidGlassToggle on={liveLyricsOn} onChange={setLiveLyricsOn} />
-          </div>
-          <AnimatePresence>
-            {liveLyricsOn && (
-              <motion.div
-                className="liquid-glass-card"
-                style={{
-                  padding: 16,
-                  minHeight: 80,
-                  textAlign: 'center',
-                  fontSize: 15,
-                  lineHeight: 1.5,
-                  color: 'var(--secondary-text)',
-                }}
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={spring}
-              >
-                {liveLyricsText || 'Live subtitles will appear here when available.'}
-              </motion.div>
+            {/* Synchronized Lyrics toggle — only show when NOT in full lyrics mode */}
+            {!liveLyricsOn && lyricsData && (lyricsData.original?.length > 0 || lyricsData.translated?.length > 0) && (
+              <div style={{ width: '100%', marginTop: 'auto', marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                  <span style={{ fontSize: 14, color: 'var(--secondary-text)', marginRight: 'auto' }}>Synchronized Lyrics</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {/* Language selector */}
+                    {lyricsData.translated?.length > 0 && (
+                      <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 8, padding: 4 }}>
+                        <button
+                          type="button"
+                          onClick={() => setLyricsLanguage('original')}
+                          style={{
+                            padding: '4px 12px',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: lyricsLanguage === 'original' ? 600 : 400,
+                            background: lyricsLanguage === 'original' ? 'rgba(255,255,255,0.2)' : 'transparent',
+                            color: 'var(--primary-text)',
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Arabic
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLyricsLanguage('translated')}
+                          style={{
+                            padding: '4px 12px',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: lyricsLanguage === 'translated' ? 600 : 400,
+                            background: lyricsLanguage === 'translated' ? 'rgba(255,255,255,0.2)' : 'transparent',
+                            color: 'var(--primary-text)',
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          English
+                        </button>
+                      </div>
+                    )}
+                    <LiquidGlassToggle on={liveLyricsOn} onChange={setLiveLyricsOn} />
+                  </div>
+                </div>
+              </div>
             )}
-          </AnimatePresence>
-        </div>
-      </motion.div>
+
+            {/* Fallback: Old live subtitles (if no synchronized lyrics) */}
+            {!liveLyricsOn && (!lyricsData || (lyricsData.original?.length === 0 && lyricsData.translated?.length === 0)) && (
+              <div style={{ width: '100%', marginTop: 'auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                  <span style={{ fontSize: 14, color: 'var(--secondary-text)' }}>Live subtitles</span>
+                  <LiquidGlassToggle on={liveLyricsOn} onChange={setLiveLyricsOn} />
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add to Playlist modal */}
+      <AnimatePresence>
+        {showAddToPlaylist && currentTrack && (
+          <motion.div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+              background: 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(8px)',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowAddToPlaylist(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: '100%', maxWidth: 360 }}
+            >
+              <AddToPlaylist
+                nasheed={{
+                  id: currentTrack.id,
+                  title: currentTrack.title,
+                  artist: currentTrack.artist,
+                  imageUrl: currentTrack.artworkUrl || currentTrack.imageUrl,
+                  audioUrl: currentTrack.audioUrl,
+                  lyrics: currentTrack.lyrics,
+                  genre: currentTrack.genre,
+                }}
+                onClose={() => setShowAddToPlaylist(false)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

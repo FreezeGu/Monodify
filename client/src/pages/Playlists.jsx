@@ -1,205 +1,364 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTabNavigation } from '../context/TabNavigationContext';
+import { usePlayer } from '../context/PlayerContext';
+import { useAuth } from '../context/AuthContext';
+import { collection, query, where, getDocs, addDoc, deleteDoc, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import ScreenLayout from '../components/ScreenLayout';
 import GlassCard from '../components/GlassCard';
+import GlassListRow from '../components/GlassListRow';
+import GlassButton from '../components/GlassButton';
 
-const FILTER_CHIPS = ['Playlists', 'Favorites', 'Downloaded'];
-
-const MOCK_PLAYLISTS = [
-  { id: '1', title: 'My Favorites', songCount: 24, image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop', isPublic: true },
-  { id: '2', title: 'Peaceful Morning', songCount: 15, image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop', isPublic: false },
-  { id: '3', title: 'Ramadan Vibes', songCount: 32, image: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=400&h=400&fit=crop', isPublic: true },
-  { id: '4', title: 'Late Night Dhikr', songCount: 18, image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop', isPublic: false },
-];
-
-const LIKED_SONGS_COUNT = 47;
+const FAVORITES_KEY = 'monody-favorites';
 
 export default function Playlists() {
   const { push } = useTabNavigation();
-  const [activeFilter, setActiveFilter] = useState('Playlists');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { setCurrentTrack } = usePlayer();
+  const { user } = useAuth();
+  const [activeView, setActiveView] = useState('playlists'); // 'playlists' or 'favorites'
+  const [playlists, setPlaylists] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
 
-  const handleCreatePlaylist = () => {
-    if (newPlaylistName.trim()) {
-      setNewPlaylistName('');
-      setShowCreateModal(false);
+  useEffect(() => {
+    if (user) {
+      loadPlaylists();
+      loadFavorites();
+    }
+  }, [user]);
+
+  const loadPlaylists = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'playlists'), where('userId', '==', user.uid));
+      const snapshot = await getDocs(q);
+      const loadedPlaylists = snapshot.docs.map((doc) => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        songCount: doc.data().songs?.length || 0,
+      }));
+      setPlaylists(loadedPlaylists);
+    } catch (err) {
+      console.error('Error loading playlists:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const renderContent = () => {
-    switch (activeFilter) {
-      case 'Favorites':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Liked songs content as list */}
-            {[
-              { id: 1, title: 'Bismillah', artist: 'Maher Zain', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop' },
-              { id: 2, title: 'Allahu', artist: 'Sami Yusuf', image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop' },
-              { id: 3, title: 'Ya Nabi Salam', artist: 'Mesut Kurtis', image: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=400&h=400&fit=crop' },
-              { id: 4, title: 'Kun Anta', artist: 'Humood', image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop' },
-            ].map((song) => (
-              <div key={song.id} className="glass-list-row" style={{ borderRadius: 0, cursor: 'pointer' }}>
-                <img
-                  src={song.image}
-                  alt={song.title}
-                  style={{ width: 48, height: 48, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{song.title}</div>
-                  <div className="text-tertiary" style={{ fontSize: 13 }}>{song.artist}</div>
-                </div>
-                <HeartFilledIcon />
-              </div>
-            ))}
-          </div>
-        );
+  const loadFavorites = async () => {
+    try {
+      const saved = localStorage.getItem(FAVORITES_KEY);
+      if (saved) {
+        const favs = JSON.parse(saved);
+        // Load full nasheed data from Firestore for favorites
+        const favoriteIds = favs.map(f => f.id);
+        if (favoriteIds.length > 0) {
+          const nasheedsRef = collection(db, 'nasheeds');
+          const nasheedsSnapshot = await getDocs(nasheedsRef);
+          const allNasheeds = nasheedsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const favoriteNasheeds = allNasheeds.filter(n => favoriteIds.includes(n.id));
+          setFavorites(favoriteNasheeds);
+        } else {
+          setFavorites([]);
+        }
+      } else {
+        setFavorites([]);
+      }
+    } catch (err) {
+      console.error('Error loading favorites:', err);
+      setFavorites([]);
+    }
+  };
 
-      case 'Downloaded':
-        return (
-          <div style={{ textAlign: 'center', padding: '64px 16px' }}>
-            <div style={{ marginBottom: 16 }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--tertiary-text)" strokeWidth="1.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            </div>
-            <p className="text-tertiary" style={{ fontSize: 15 }}>
-              No downloaded content yet
-            </p>
-            <p className="text-tertiary" style={{ fontSize: 13, marginTop: 4 }}>
-              Download playlists to listen offline
-            </p>
-          </div>
-        );
+  const handleCreatePlaylist = async () => {
+    if (!user || !newPlaylistName.trim()) return;
+    
+    try {
+      const newPlaylist = {
+        title: newPlaylistName.trim(),
+        userId: user.uid,
+        songs: [],
+        public: false,
+        createdAt: new Date().toISOString(),
+        imageUrl: null, // Will be set from first song's image
+      };
+      
+      const docRef = await addDoc(collection(db, 'playlists'), newPlaylist);
+      setPlaylists([...playlists, { id: docRef.id, ...newPlaylist, songCount: 0 }]);
+      setNewPlaylistName('');
+      setShowCreateForm(false);
+    } catch (err) {
+      console.error('Error creating playlist:', err);
+      alert('Failed to create playlist');
+    }
+  };
 
-      default: // Playlists
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {MOCK_PLAYLISTS.map((playlist) => (
-              <div
-                key={playlist.id}
-                className="glass-list-row"
-                onClick={() => push(`/playlist/${playlist.id}`)}
-                style={{ borderRadius: 12, cursor: 'pointer', padding: '10px 14px' }}
-              >
-                <img
-                  src={playlist.image}
-                  alt={playlist.title}
-                  style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 3 }}>{playlist.title}</div>
-                  <div className="text-tertiary" style={{ fontSize: 13 }}>
-                    {'Playlist'} {' \u00B7 '} {playlist.songCount} songs
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
+  const handleDeletePlaylist = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this playlist?')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'playlists', id));
+      setPlaylists(playlists.filter(p => p.id !== id));
+    } catch (err) {
+      console.error('Error deleting playlist:', err);
+      alert('Failed to delete playlist');
+    }
+  };
+
+  const handleRemoveFavorite = (id) => {
+    try {
+      const updated = favorites.filter(f => f.id !== id);
+      setFavorites(updated);
+      // Save favorite IDs to localStorage
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(updated.map(f => ({ id: f.id }))));
+    } catch (err) {
+      console.error('Error removing favorite:', err);
     }
   };
 
   return (
     <ScreenLayout showBackButton={false}>
       <div style={{ paddingTop: 8 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em' }}>Your Library</h1>
-          <button
-            className="liquid-glass-btn"
-            onClick={() => setShowCreateModal(true)}
-            style={{ padding: '8px 16px', fontSize: 24, lineHeight: 1, borderRadius: 99 }}
-            aria-label="Create playlist"
-          >
-            +
-          </button>
-        </div>
-
-        {/* Filter chips */}
-        <div className="glass-filter-chips" style={{ marginBottom: 24 }}>
-          {FILTER_CHIPS.map((chip) => (
-            <button
-              key={chip}
-              className={`glass-filter-chip ${activeFilter === chip ? 'active' : ''}`}
-              onClick={() => setActiveFilter(chip)}
-            >
-              {chip}
-            </button>
-          ))}
-        </div>
-
-        {/* Liked Songs card */}
-        <div
-          className="liked-songs-card"
-          onClick={() => push('/playlist/liked')}
-          style={{ marginBottom: 20, cursor: 'pointer' }}
-        >
-          <div className="liked-songs-inner">
-            <div className="liked-songs-content">
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
-                <span className="text-tertiary" style={{ fontSize: 12 }}>
-                  {'Bismillah \u00B7 Allahu \u00B7 Ya Nabi Salam \u00B7 Kun Anta \u00B7 and more...'}
-                </span>
-              </div>
-              <h3 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: '#fff' }}>Liked Songs</h3>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-                {LIKED_SONGS_COUNT} songs
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Playlist list / Favorites / Downloaded */}
-        {renderContent()}
-
-        {/* Create Playlist Modal */}
-        {showCreateModal && (
+        {/* Segmented Control - Spotify style */}
+        <div className="glass-segmented-control" style={{ marginBottom: 24 }}>
           <div
-            className="glass-modal-backdrop"
-            onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false); }}
+            className={`glass-segmented-control-item ${activeView === 'playlists' ? 'active' : ''}`}
+            onClick={() => setActiveView('playlists')}
           >
-            <div className="glass-modal-content" style={{ width: '90%', maxWidth: 360 }}>
-              <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20, textAlign: 'center' }}>Create Playlist</h3>
-              <input
-                type="text"
-                value={newPlaylistName}
-                onChange={(e) => setNewPlaylistName(e.target.value)}
-                placeholder="Playlist name"
-                className="liquid-glass-input"
-                style={{ width: '100%', marginBottom: 20 }}
-                autoFocus
-              />
+            Playlists
+          </div>
+          <div
+            className={`glass-segmented-control-item ${activeView === 'favorites' ? 'active' : ''}`}
+            onClick={() => setActiveView('favorites')}
+          >
+            Liked Songs
+          </div>
+        </div>
+
+        {activeView === 'playlists' ? (
+          <>
+            {/* Create Playlist Button */}
+            <div style={{ marginBottom: 24 }}>
+              {!showCreateForm ? (
+                <GlassButton
+                  onClick={() => {
+                    if (!user) {
+                      alert('Please log in to create playlists');
+                      return;
+                    }
+                    setShowCreateForm(true);
+                  }}
+                  style={{ width: '100%', padding: '14px' }}
+                >
+                  + Create Playlist
+                </GlassButton>
+              ) : (
+                <div className="liquid-glass-card" style={{ padding: 16 }}>
+                  <input
+                    type="text"
+                    value={newPlaylistName}
+                    onChange={(e) => setNewPlaylistName(e.target.value)}
+                    placeholder="Playlist name"
+                    className="liquid-glass-input"
+                    style={{ width: '100%', marginBottom: 12 }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreatePlaylist();
+                      if (e.key === 'Escape') {
+                        setShowCreateForm(false);
+                        setNewPlaylistName('');
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <GlassButton onClick={handleCreatePlaylist} style={{ flex: 1 }}>
+                      Create
+                    </GlassButton>
+                    <GlassButton
+                      variant="secondary"
+                      onClick={() => {
+                        setShowCreateForm(false);
+                        setNewPlaylistName('');
+                      }}
+                      style={{ flex: 1 }}
+                    >
+                      Cancel
+                    </GlassButton>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Playlists Grid - Spotify style */}
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '64px 16px' }}>
+                <p className="text-tertiary">Loading playlists...</p>
+              </div>
+            ) : playlists.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                {playlists.map((playlist) => (
+                  <GlassCard
+                    key={playlist.id}
+                    hoverable
+                    onClick={() => push(`/playlist/${playlist.id}`)}
+                    style={{ padding: 16 }}
+                  >
+                    <div
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        borderRadius: 8,
+                        background: `url(${playlist.image}) center/cover`,
+                        marginBottom: 12,
+                        boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+                      }}
+                    />
+                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{playlist.title}</div>
+                    <div className="text-tertiary" style={{ fontSize: 13 }}>
+                      {playlist.songCount || playlist.songs?.length || 0} {(playlist.songCount || playlist.songs?.length || 0) === 1 ? 'song' : 'songs'}
+                    </div>
+                    <button
+                      className="liquid-glass-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePlaylist(playlist.id);
+                      }}
+                      style={{
+                        marginTop: 8,
+                        padding: '6px 12px',
+                        fontSize: 12,
+                        width: '100%',
+                        background: 'rgba(255, 107, 107, 0.2)',
+                        border: '1px solid rgba(255, 107, 107, 0.3)',
+                        color: '#ff6b6b',
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </GlassCard>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '64px 16px' }}>
+                <p className="text-tertiary">No playlists yet. Create your first playlist!</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Liked Songs - Spotify style */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                <div
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 8,
+                    background: 'linear-gradient(135deg, #450af5, #c44569)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                  </svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
+                    Playlist
+                  </div>
+                  <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>Liked Songs</h1>
+                  <div className="text-secondary" style={{ fontSize: 14 }}>
+                    {favorites.length} {favorites.length === 1 ? 'song' : 'songs'}
+                  </div>
+                </div>
+              </div>
               <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                  className="liquid-glass-btn"
-                  onClick={() => setShowCreateModal(false)}
-                  style={{ flex: 1, padding: '12px' }}
+                <GlassButton
+                  onClick={() => {
+                    if (favorites.length > 0) {
+                      setCurrentTrack({
+                        ...favorites[0],
+                        artworkUrl: favorites[0].image,
+                        lyrics: favorites[0].lyrics, // Include lyrics if available
+                      });
+                    }
+                  }}
+                  style={{ padding: '12px 32px', fontSize: 14, fontWeight: 700 }}
                 >
-                  Cancel
-                </button>
-                <button
-                  className="btn-primary"
-                  onClick={handleCreatePlaylist}
-                  style={{ flex: 1, padding: '12px' }}
-                >
-                  Create
-                </button>
+                  Play
+                </GlassButton>
+                <GlassButton variant="secondary" style={{ padding: '12px 24px' }}>
+                  Shuffle
+                </GlassButton>
               </div>
             </div>
-          </div>
+
+            {/* Favorites List */}
+            {favorites.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {favorites.map((song, index) => (
+                  <GlassListRow
+                    key={song.id}
+                    leftContent={
+                      <div style={{ width: 40, textAlign: 'center', fontSize: 15, color: 'var(--tertiary-text)' }}>
+                        {index + 1}
+                      </div>
+                    }
+                    rightContent={
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className="text-tertiary" style={{ fontSize: 13 }}>{song.duration}</span>
+                        <button
+                          className="liquid-glass-btn glass-btn-icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFavorite(song.id);
+                          }}
+                          style={{ padding: 4 }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                    onClick={() => {
+                      setCurrentTrack({
+                        ...song,
+                        lyrics: song.lyrics, // Include lyrics if available
+                        artworkUrl: song.image,
+                      });
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                      <img
+                        src={song.imageUrl || song.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'}
+                        alt={song.title}
+                        style={{ width: 48, height: 48, borderRadius: 6, objectFit: 'cover' }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{song.title}</div>
+                        <div className="text-tertiary" style={{ fontSize: 13 }}>{song.artist}</div>
+                      </div>
+                    </div>
+                  </GlassListRow>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '64px 16px' }}>
+                <p className="text-tertiary">No liked songs yet. Start liking songs to see them here!</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </ScreenLayout>
-  );
-}
-
-function HeartFilledIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(30, 215, 96, 0.9)" stroke="none">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
   );
 }

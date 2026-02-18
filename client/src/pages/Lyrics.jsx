@@ -2,24 +2,56 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import ScreenLayout from '../components/ScreenLayout';
 
-const MOCK_LYRICS = [
-  { time: 0, text: 'Bismillah, Bismillah' },
-  { time: 5, text: 'In the name of Allah' },
-  { time: 10, text: 'The Most Gracious, The Most Merciful' },
-  { time: 15, text: 'Bismillah, Bismillah' },
-  { time: 20, text: 'In the name of Allah' },
-  { time: 25, text: 'We begin, we begin' },
-];
-
 export default function Lyrics() {
-  const { currentTrack, currentTime } = usePlayer();
+  const { currentTrack, currentTime, lyricsData, lyricsLanguage } = usePlayer();
   const [fontSize, setFontSize] = useState(18);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const lineRefs = useRef([]);
 
+  // Get lyrics from player context
+  const displayLyrics = lyricsLanguage === 'translated' && lyricsData?.translated?.length > 0 
+    ? lyricsData.translated 
+    : lyricsData?.original || [];
+
+  // Group words into lines for display
+  const lyricsLines = [];
+  let currentLine = { words: [], start: null, end: null };
+  
+  displayLyrics.forEach((word) => {
+    currentLine.words.push(word.word);
+    if (currentLine.start === null) {
+      currentLine.start = word.start;
+    }
+    currentLine.end = word.end;
+
+    // End line on punctuation or long pause
+    const isPunctuation = /[.!?،؛]/.test(word.word);
+    const nextWord = displayLyrics[displayLyrics.indexOf(word) + 1];
+    const pause = nextWord ? nextWord.start - word.end : 0;
+
+    if (isPunctuation || pause > 1.5 || currentLine.words.length >= 8) {
+      lyricsLines.push({
+        text: currentLine.words.join(' '),
+        time: currentLine.start,
+        end: currentLine.end,
+      });
+      currentLine = { words: [], start: null, end: null };
+    }
+  });
+
+  if (currentLine.words.length > 0) {
+    lyricsLines.push({
+      text: currentLine.words.join(' '),
+      time: currentLine.start,
+      end: currentLine.end,
+    });
+  }
+
   useEffect(() => {
-    const index = MOCK_LYRICS.findIndex((line, i) => {
-      const nextLine = MOCK_LYRICS[i + 1];
+    if (lyricsLines.length === 0) return;
+    
+    const index = lyricsLines.findIndex((line, i) => {
+      const nextLine = lyricsLines[i + 1];
       return currentTime >= line.time && (!nextLine || currentTime < nextLine.time);
     });
     if (index !== -1 && index !== currentLineIndex) {
@@ -28,7 +60,7 @@ export default function Lyrics() {
         lineRefs.current[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
-  }, [currentTime, currentLineIndex]);
+  }, [currentTime, currentLineIndex, lyricsLines]);
 
   if (!currentTrack) {
     return (
@@ -75,26 +107,32 @@ export default function Lyrics() {
             <div style={{ fontWeight: 600, fontSize: 20, marginBottom: 8 }}>{currentTrack.title}</div>
             <div className="text-tertiary" style={{ fontSize: 15 }}>{currentTrack.artist}</div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'center' }}>
-            {MOCK_LYRICS.map((line, index) => (
-              <div
-                key={index}
-                ref={(el) => (lineRefs.current[index] = el)}
-                style={{
-                  fontSize: `${fontSize}px`,
-                  fontWeight: index === currentLineIndex ? 600 : 400,
-                  color: index === currentLineIndex ? 'var(--primary-text)' : 'var(--secondary-text)',
-                  textAlign: 'center',
-                  transition: 'all 0.3s ease',
-                  padding: '12px 20px',
-                  borderRadius: 12,
-                  background: index === currentLineIndex ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                }}
-              >
-                {line.text}
-              </div>
-            ))}
-          </div>
+          {lyricsLines.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'center' }}>
+              {lyricsLines.map((line, index) => (
+                <div
+                  key={index}
+                  ref={(el) => (lineRefs.current[index] = el)}
+                  style={{
+                    fontSize: `${fontSize}px`,
+                    fontWeight: index === currentLineIndex ? 600 : 400,
+                    color: index === currentLineIndex ? 'var(--primary-text)' : 'var(--secondary-text)',
+                    textAlign: 'center',
+                    transition: 'all 0.3s ease',
+                    padding: '12px 20px',
+                    borderRadius: 12,
+                    background: index === currentLineIndex ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                  }}
+                >
+                  {line.text}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '64px 16px' }}>
+              <p className="text-tertiary">No lyrics available for this track.</p>
+            </div>
+          )}
         </section>
       </div>
     </ScreenLayout>

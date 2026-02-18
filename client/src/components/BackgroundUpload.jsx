@@ -1,12 +1,15 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBackground } from '../context/BackgroundContext';
-import { uploadToImgBB } from '../config/imgbb';
+import { useAuth } from '../context/AuthContext';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../config/firebase';
 import GlassCard from './GlassCard';
 import GlassButton from './GlassButton';
 
-export default function BackgroundUpload({ variant = 'compact' }) {
+export default function BackgroundUpload({ variant = 'compact', onUploadComplete }) {
   const { background, setCustomUrl, setDefault, getDefaults } = useBackground();
+  const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -15,26 +18,52 @@ export default function BackgroundUpload({ variant = 'compact' }) {
   const handleFileSelect = async (file) => {
     if (!file) return;
     
+    if (!user) {
+      setUploadError('Please log in to upload custom backgrounds');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file (JPG, PNG, WebP)');
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('Image size must be less than 10MB');
+      return;
+    }
+    
     setUploadError(null);
     setUploading(true);
 
     try {
-      // Upload to ImgBB
-      const result = await uploadToImgBB(file);
+      // Upload to Firebase Storage
+      const timestamp = Date.now();
+      const fileName = `background_${timestamp}_${file.name}`;
+      const storageRef = ref(storage, `users/${user.uid}/backgrounds/${fileName}`);
       
-      // Set the ImgBB URL as background (use display_url for best quality)
-      setCustomUrl(result.displayUrl || result.url);
+      // Upload file
+      const snapshot = await uploadBytes(storageRef, file);
       
-      // Store additional metadata if needed
-      if (result.deleteUrl) {
-        // Could store deleteUrl for future deletion feature
-        console.log('Image uploaded successfully to ImgBB:', result.url);
+      // Get download URL
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      // Set the Firebase Storage URL as background
+      const bgData = { id: 'custom', name: 'Custom', url: downloadURL };
+      setCustomUrl(downloadURL);
+      
+      // Call callback if provided
+      if (onUploadComplete) {
+        onUploadComplete(bgData);
       }
+      
+      console.log('Image uploaded successfully to Firebase Storage:', downloadURL);
     } catch (error) {
       console.error('Upload failed:', error);
       const errorMessage = error.message || 'Failed to upload image. Please try again.';
       setUploadError(errorMessage);
-      // Don't show alert, let the error message display in the UI
     } finally {
       setUploading(false);
     }
@@ -61,8 +90,8 @@ export default function BackgroundUpload({ variant = 'compact' }) {
   };
 
   const removeCustom = () => {
-    // Note: We don't delete from ImgBB here (would need deleteUrl)
-    // The image will remain on ImgBB but won't be used as background
+    // Note: We don't delete from Firebase Storage here
+    // The image will remain in Storage but won't be used as background
     setDefault(getDefaults()[0]);
   };
 
@@ -70,18 +99,20 @@ export default function BackgroundUpload({ variant = 'compact' }) {
 
   if (variant === 'compact') {
     return (
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
         {getDefaults().map((bg) => (
           <button
             key={bg.id}
             type="button"
             className="liquid-glass-btn"
             style={{
-              background: bg.url,
-              border: background?.id === bg.id ? '2px solid rgba(255,255,255,0.9)' : undefined,
-              width: 72,
-              height: 72,
-              borderRadius: 14,
+              backgroundImage: bg.url.startsWith('http') ? `url(${bg.url})` : bg.url,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              border: background?.id === bg.id ? '2px solid rgba(255,255,255,0.9)' : '2px solid rgba(255,255,255,0.1)',
+              width: '100%',
+              aspectRatio: '1',
+              borderRadius: 12,
               padding: 0,
             }}
             onClick={() => setDefault(bg)}
@@ -248,7 +279,7 @@ export default function BackgroundUpload({ variant = 'compact' }) {
                     <circle cx="12" cy="12" r="10"></circle>
                     <path d="M12 6v6l4 2"></path>
                   </svg>
-                  <span className="text-secondary">Uploading to ImgBB...</span>
+                  <span className="text-secondary">Uploading to Firebase Storage...</span>
                 </div>
               </div>
             ) : (
@@ -260,7 +291,7 @@ export default function BackgroundUpload({ variant = 'compact' }) {
                   Choose Image
                 </GlassButton>
                 <p className="text-tertiary" style={{ fontSize: 12, marginTop: 12 }}>
-                  Supported: JPG, PNG, WebP. Images are stored on ImgBB.
+                  Supported: JPG, PNG, WebP (max 10MB). Images are stored in Firebase Storage.
                 </p>
               </>
             )}
@@ -285,23 +316,42 @@ export default function BackgroundUpload({ variant = 'compact' }) {
         <h3 className="text-secondary" style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
           Default Backgrounds
         </h3>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
           {getDefaults().map((bg) => (
             <button
               key={bg.id}
               type="button"
               className="liquid-glass-btn"
               style={{
-                background: bg.url,
-                border: background?.id === bg.id ? '2px solid rgba(255,255,255,0.9)' : undefined,
-                width: 80,
-                height: 80,
+                backgroundImage: bg.url.startsWith('http') ? `url(${bg.url})` : bg.url,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                border: background?.id === bg.id ? '2px solid rgba(255,255,255,0.9)' : '2px solid rgba(255,255,255,0.1)',
+                width: '100%',
+                aspectRatio: '1',
                 borderRadius: 14,
                 padding: 0,
+                position: 'relative',
+                overflow: 'hidden',
               }}
               onClick={() => setDefault(bg)}
               aria-label={`Set background to ${bg.name}`}
-            />
+            >
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                padding: '6px 8px',
+                background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                color: 'white',
+                fontSize: 11,
+                fontWeight: 600,
+                textAlign: 'left',
+              }}>
+                {bg.name}
+              </div>
+            </button>
           ))}
         </div>
       </div>

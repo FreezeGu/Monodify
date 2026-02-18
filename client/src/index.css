@@ -1,5 +1,22 @@
-/* Monody — Liquid glass design system (freefrontend.com/css-liquid-glass) */
+/* Monodify — Liquid glass design system (freefrontend.com/css-liquid-glass) */
 *, *::before, *::after { box-sizing: border-box; }
+
+/* Image optimization */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: opacity;
+  content-visibility: auto;
+}
+
+/* Optimize background images */
+[style*="background-image"] {
+  will-change: background-image;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
 
 :root {
   /* Typography */
@@ -67,6 +84,10 @@
   --text-3xl: 28px;
   --text-4xl: 32px;
   
+  /* Font Families */
+  --font-logo: 'Freebooter Script', cursive;
+  --font-body: 'SF Pro', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+  
   /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -124,26 +145,53 @@
 html {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
+  height: 100%;
+  height: -webkit-fill-available; /* iOS Safari */
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
 
 body, input, textarea, button, select, .nav-item, h1, h2, h3, p, span, label {
-  font-family: 'Segoe UI', 'Segoe UI Web', Segoe, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  font-family: var(--font-body);
 }
 
 body {
   margin: 0;
-  min-height: 100dvh;
+  padding: 0;
+  height: 100%;
+  height: -webkit-fill-available; /* iOS Safari */
   min-height: 100vh;
+  min-height: -webkit-fill-available; /* iOS Safari */
+  min-height: 100dvh;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  /* Prevent pull-to-refresh on iOS */
+  overscroll-behavior-y: none;
+  overscroll-behavior: none;
+  /* Prevent text selection on iOS (but allow on inputs) */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent zoom on double tap */
+  touch-action: manipulation;
   color: var(--primary-text);
   background: #000;
-  overflow-x: hidden;
-  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  /* Remove default padding - safe areas handled in app-shell */
 }
 
 #root {
-  min-height: 100dvh;
-  min-height: 100vh;
-  position: relative;
+  height: 100%;
+  height: -webkit-fill-available; /* iOS Safari */
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Prevent iOS Safari bounce scrolling */
+  overscroll-behavior: none;
 }
 
 /* ========== Background layer ========== */
@@ -153,6 +201,13 @@ body {
   z-index: 0;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
+  /* Ensure full resolution images are used */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  /* Use high-quality image scaling */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   filter: blur(0);
   transition: background-image 0.6s ease, filter 0.4s ease;
 }
@@ -182,7 +237,7 @@ body {
 /* Buttons: frosted glass, no distortion */
 .liquid-glass-btn,
 .btn-glass {
-  font-family: 'Segoe UI', Segoe, -apple-system, sans-serif;
+  font-family: var(--font-body);
   background: rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(20px) saturate(1.2);
   -webkit-backdrop-filter: blur(20px) saturate(1.2);
@@ -217,7 +272,7 @@ body {
 
 /* Primary CTA: still liquid glass, brighter */
 .btn-primary {
-  font-family: 'Segoe UI', Segoe, -apple-system, sans-serif;
+  font-family: var(--font-body);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -265,7 +320,7 @@ body {
 }
 
 .bottom-nav .nav-item {
-  font-family: 'Segoe UI', Segoe, -apple-system, sans-serif;
+  font-family: var(--font-body);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -301,7 +356,7 @@ body {
 
 /* ========== Liquid glass toggle switch ========== */
 .liquid-glass-toggle {
-  font-family: 'Segoe UI', Segoe, -apple-system, sans-serif;
+  font-family: var(--font-body);
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -389,7 +444,7 @@ body {
 input[type="text"].glass,
 input.glass,
 textarea.glass {
-  font-family: 'Segoe UI', Segoe, -apple-system, sans-serif;
+  font-family: var(--font-body);
   background: rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -456,12 +511,20 @@ textarea.glass:focus {
 
 /* ========== Layout ========== */
 .app-shell {
+  height: 100%;
+  height: -webkit-fill-available; /* iOS Safari */
+  width: 100%;
   position: relative;
   z-index: 1;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(72px + var(--safe-bottom));
+  overflow: hidden;
+  /* Safe area insets for iOS notch/home indicator */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 .main-content {
@@ -470,7 +533,10 @@ textarea.glass:focus {
   display: flex;
   flex-direction: column;
   padding: 0;
-  padding-top: var(--safe-top);
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Safe area top padding handled by app-shell */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 /* ========== Spotify-style screen layout ========== */
@@ -569,24 +635,37 @@ textarea.glass:focus {
   padding-top: 8px;
 }
 
+.bottom-tab-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
 .bottom-tab-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 8px 12px;
-  min-width: 56px;
+  padding: 8px 16px;
+  min-width: 64px;
+  flex: 1;
+  max-width: 120px;
   background: transparent;
   border: none;
   color: var(--secondary-text);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: color 0.2s;
+  transition: color 0.2s ease;
   border-radius: 8px;
+  position: relative;
 }
 
 .bottom-tab-item:hover {
@@ -595,6 +674,18 @@ textarea.glass:focus {
 
 .bottom-tab-item.active {
   color: var(--accent);
+}
+
+.bottom-tab-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 0 0 3px 3px;
 }
 
 .bottom-tab-icon {
@@ -729,7 +820,7 @@ textarea.glass:focus {
 }
 
 .player__legend__title {
-  font-family: 'Segoe UI', Segoe, -apple-system, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.95rem;
   margin: 0;
   color: #fff;
@@ -740,7 +831,7 @@ textarea.glass:focus {
 }
 
 .player__legend__sub-title {
-  font-family: 'Segoe UI', Segoe, -apple-system, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.85rem;
   margin: 0;
   opacity: 0.7;
@@ -827,8 +918,55 @@ textarea.glass:focus {
   -webkit-overflow-scrolling: touch;
 }
 
-/* ========== Typography (Segoe) ========== */
-h1, h2, h3 { margin: 0; font-weight: 600; font-family: 'Segoe UI', Segoe, -apple-system, sans-serif; }
+/* ========== Typography (Magisans) ========== */
+h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-body); }
+
+/* ========== SF Pro Font ========== */
+/* If you have multiple SF Pro files, add @font-face declarations for each weight */
+/* Common SF Pro file names: SF-Pro-Display-Regular.woff2, SF-Pro-Text-Regular.woff2, etc. */
+
+@font-face {
+  font-family: 'SF Pro';
+  src: url('/fonts/sf-pro-display-medium.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro';
+  src: url('/fonts/sf-pro-display-medium.woff2') format('woff2'),
+       url('/fonts/SF-Pro-Display-Medium.woff2') format('woff2'),
+       url('/fonts/SF-Pro-Text-Medium.woff2') format('woff2'),
+       url('/fonts/SF-Pro-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro';
+  src: url('/fonts/sf-pro-display-medium.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro';
+  src: url('/fonts/sf-pro-display-medium.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ========== Monodify Logo Font ========== */
+.monodify-logo {
+  font-family: var(--font-logo);
+  font-weight: normal;
+  letter-spacing: 0.05em;
+  font-style: normal;
+}
 h1 { font-size: 1.75rem; letter-spacing: -0.02em; }
 h2 { font-size: 1.35rem; }
 .text-secondary { color: var(--secondary-text); }
@@ -1171,7 +1309,7 @@ h2 { font-size: 1.35rem; }
 }
 
 .glass-filter-chip {
-  font-family: 'Segoe UI', Segoe, -apple-system, sans-serif;
+  font-family: var(--font-body);
   background: rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
