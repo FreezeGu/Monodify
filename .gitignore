@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Temporary folders
+uploads/
+static/processed/
+
+# IDE / Editor specific
+.vscode/
+.idea/
+
+# OS-specific
+.DS_Store
+Thumbs.db 
