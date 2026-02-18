@@ -4,11 +4,9 @@ import { AnimatePresence } from 'framer-motion';
 import { BackgroundProvider, useBackground } from './context/BackgroundContext';
 import { PlayerProvider, usePlayer } from './context/PlayerContext';
 import { TabNavigationProvider } from './context/TabNavigationContext';
-import Home from './pages/Home';
-import Browse from './pages/Browse';
-import Search from './pages/Search';
+import Featured from './pages/Featured';
 import SearchResults from './pages/SearchResults';
-import Library from './pages/Library';
+import Playlists from './pages/Playlists';
 import Profile from './pages/Profile';
 import Upload from './pages/Upload';
 import Queue from './pages/Queue';
@@ -47,14 +45,12 @@ function AppLayout() {
         <main className="main-content">
           <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname + location.search}>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<Featured />} />
               <Route path="/album/:id" element={<AlbumPage />} />
               <Route path="/artist/:id" element={<ArtistPage />} />
               <Route path="/playlist/:id" element={<PlaylistPage />} />
-              <Route path="/browse" element={<Browse />} />
-              <Route path="/search" element={<Search />} />
               <Route path="/search/results" element={<SearchResults />} />
-              <Route path="/library" element={<Library />} />
+              <Route path="/playlists" element={<Playlists />} />
               <Route path="/upload" element={<Upload />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/queue" element={<Queue />} />

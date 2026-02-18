@@ -2,59 +2,62 @@ import React from 'react';
 import { useTabNavigation } from '../context/TabNavigationContext';
 
 const TABS = [
-  { id: 'home', label: 'Home', path: '/', icon: HomeIcon },
-  { id: 'browse', label: 'Browse', path: '/browse', icon: BrowseIcon },
-  { id: 'search', label: 'Search', path: '/search', icon: SearchIcon },
-  { id: 'library', label: 'Library', path: '/library', icon: LibraryIcon },
-  { id: 'profile', label: 'Profile', path: '/profile', icon: ProfileIcon },
+  { id: 'featured', label: 'Featured', path: '/', icon: FeaturedIcon, iconActive: FeaturedIconActive },
+  { id: 'playlists', label: 'Playlists', path: '/playlists', icon: PlaylistsIcon, iconActive: PlaylistsIconActive },
+  { id: 'profile', label: 'Profile', path: '/profile', icon: ProfileIcon, iconActive: ProfileIconActive },
 ];
 
-function HomeIcon() {
+function FeaturedIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
       <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
   );
 }
-function BrowseIcon() {
+
+function FeaturedIconActive() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="2" x2="12" y2="6" />
-      <line x1="12" y1="18" x2="12" y2="22" />
-      <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
-      <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
-      <line x1="2" y1="12" x2="6" y2="12" />
-      <line x1="18" y1="12" x2="22" y2="12" />
-      <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
-      <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path d="M12.707 2.293a1 1 0 0 0-1.414 0l-9 9A1 1 0 0 0 3 13h1v7a2 2 0 0 0 2 2h4v-6h4v6h4a2 2 0 0 0 2-2v-7h1a1 1 0 0 0 .707-1.707l-9-9Z" />
     </svg>
   );
 }
-function SearchIcon() {
+
+function PlaylistsIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15V6" />
+      <path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+      <path d="M12 12H3" />
+      <path d="M16 6H3" />
+      <path d="M12 18H3" />
     </svg>
   );
 }
-function LibraryIcon() {
+
+function PlaylistsIconActive() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="m9 18 2-2 2 2" />
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path fillRule="evenodd" clipRule="evenodd" d="M1 6a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H2a1 1 0 0 1-1-1Zm0 6a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H2a1 1 0 0 1-1-1Zm1 5a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H2Zm18-3a3.5 3.5 0 1 0-1-6.916V6a1 1 0 1 0-2 0v9.05A3.5 3.5 0 0 0 20 14Z" />
     </svg>
   );
 }
+
 function ProfileIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function ProfileIconActive() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <circle cx="12" cy="7" r="5" />
+      <path d="M3 21v-2a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" />
     </svg>
   );
 }
@@ -66,7 +69,7 @@ export default function BottomTabBar() {
     <nav className="bottom-tab-bar" role="tablist">
       {TABS.map((tab) => {
         const isActive = currentTab === tab.id;
-        const Icon = tab.icon;
+        const Icon = isActive ? tab.iconActive : tab.icon;
         return (
           <button
             key={tab.id}

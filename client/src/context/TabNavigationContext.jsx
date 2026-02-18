@@ -2,29 +2,23 @@ import React, { createContext, useContext, useRef, useCallback, useEffect } from
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const TAB_PREFIXES = {
-  home: ['/', '/album/', '/artist/', '/playlist/'],
-  browse: ['/browse'],
-  search: ['/search'],
-  library: ['/library', '/upload'],
-  profile: ['/profile'],
+  featured: ['/', '/album/', '/artist/', '/playlist/', '/search', '/browse'],
+  playlists: ['/playlists'],
+  profile: ['/profile', '/upload'],
 };
 
 const OVERLAY_PATHS = ['/queue', '/lyrics'];
 
 function getTabFromPath(pathname) {
   if (OVERLAY_PATHS.some((p) => pathname === p || pathname.startsWith(p + '?'))) return null;
-  if (pathname.startsWith('/browse')) return 'browse';
-  if (pathname.startsWith('/search')) return 'search';
-  if (pathname.startsWith('/library') || pathname.startsWith('/upload')) return 'library';
-  if (pathname.startsWith('/profile')) return 'profile';
-  return 'home';
+  if (pathname.startsWith('/playlists')) return 'playlists';
+  if (pathname.startsWith('/profile') || pathname.startsWith('/upload')) return 'profile';
+  return 'featured';
 }
 
 const initialStacks = {
-  home: ['/'],
-  browse: ['/browse'],
-  search: ['/search'],
-  library: ['/library'],
+  featured: ['/'],
+  playlists: ['/playlists'],
   profile: ['/profile'],
 };
 
@@ -35,7 +29,7 @@ export function TabNavigationProvider({ children }) {
   const location = useLocation();
   const stacksRef = useRef(JSON.parse(JSON.stringify(initialStacks)));
   const lastNavigationWasBack = useRef(false);
-  const lastTabRef = useRef('home');
+  const lastTabRef = useRef('featured');
   const directionRef = useRef('forward');
 
   const pathname = location.pathname;
