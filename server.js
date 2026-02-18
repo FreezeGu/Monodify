@@ -24,7 +24,19 @@ if (hasClientBuild) {
   app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 }
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Monody running at http://127.0.0.1:${PORT}`);
   if (!hasClientBuild) console.log('Tip: Build React app with: cd client && npm install && npm run build');
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`Port ${PORT} in use, trying port 0 (random available)…`);
+    app.listen(0, () => {
+      const addr = server.address() || {};
+      console.log(`Monody running at http://127.0.0.1:${addr.port || 'random'}`);
+    });
+  } else {
+    throw err;
+  }
 });
