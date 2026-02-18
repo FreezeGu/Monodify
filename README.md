@@ -76,3 +76,4 @@ If you don’t build the client, the server still runs and serves the legacy liq
 - `.glass-distort` — Blur + border for the full-screen player (can be combined with SVG filters).
 
 SVG filters (e.g. `#liquid-distortion`) are defined in the app for distortion-style glass where needed.
+# liquid-glass-music-player-main
