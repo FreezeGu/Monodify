@@ -145,24 +145,82 @@ export function PlayerProvider({ children }) {
   }, [currentTrack, isPlaying]);
 
   // Media Session API for background playback and lock screen artwork
+  // iOS shows grey if artwork is large or cross-origin; use a 96x96 data URL so lock screen displays correctly
   useEffect(() => {
-    if ('mediaSession' in navigator && currentTrack) {
-      const artwork = currentTrack.imageUrl || currentTrack.image || currentTrack.artworkUrl;
-      
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: currentTrack.title || 'Unknown Title',
-        artist: currentTrack.artist || 'Unknown Artist',
-        album: currentTrack.album || 'Monodify',
-        artwork: artwork ? [
-          { src: artwork, sizes: '96x96', type: 'image/jpeg' },
-          { src: artwork, sizes: '128x128', type: 'image/jpeg' },
-          { src: artwork, sizes: '192x192', type: 'image/jpeg' },
-          { src: artwork, sizes: '256x256', type: 'image/jpeg' },
-          { src: artwork, sizes: '384x384', type: 'image/jpeg' },
-          { src: artwork, sizes: '512x512', type: 'image/jpeg' },
-        ] : [],
-      });
+    if (!('mediaSession' in navigator) || !currentTrack) return;
+
+    const title = currentTrack.title || 'Unknown Title';
+    const artist = currentTrack.artist || 'Unknown Artist';
+    const album = currentTrack.album || 'Monodify';
+    const artworkUrl = currentTrack.imageUrl || currentTrack.image || currentTrack.artworkUrl;
+
+    // Set metadata immediately so title/artist show; artwork may be set async
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title,
+      artist,
+      album,
+      artwork: [],
+    });
+
+    if (!artworkUrl || artworkUrl.startsWith('data:')) {
+      if (artworkUrl && artworkUrl.startsWith('data:')) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title,
+          artist,
+          album,
+          artwork: [{ src: artworkUrl, sizes: '96x96', type: 'image/png' }],
+        });
+      }
+      return;
     }
+
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (cancelled) return;
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 96;
+        canvas.height = 96;
+        const ctx = canvas.getContext('2d');
+        const size = Math.min(img.width, img.height);
+        const x = (img.width - size) / 2;
+        const y = (img.height - size) / 2;
+        ctx.drawImage(img, x, y, size, size, 0, 0, 96, 96);
+        const dataUrl = canvas.toDataURL('image/png');
+        if (cancelled) return;
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title,
+          artist,
+          album,
+          artwork: [
+            { src: dataUrl, sizes: '96x96', type: 'image/png' },
+            { src: dataUrl, sizes: '128x128', type: 'image/png' },
+          ],
+        });
+      } catch (e) {
+        console.warn('Media Session artwork fallback:', e);
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title,
+          artist,
+          album,
+          artwork: [{ src: artworkUrl, sizes: '96x96', type: 'image/jpeg' }],
+        });
+      }
+    };
+    img.onerror = () => {
+      if (!cancelled) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title,
+          artist,
+          album,
+          artwork: [{ src: artworkUrl, sizes: '96x96', type: 'image/jpeg' }],
+        });
+      }
+    };
+    img.src = artworkUrl;
+    return () => { cancelled = true; };
   }, [currentTrack]);
 
   // Update Media Session playback state
@@ -195,9 +253,19 @@ export function PlayerProvider({ children }) {
   }, [isPlaying]);
 
   const seek = useCallback((time) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
-      setProgress(time);
+    if (audioRef.current && isFinite(time) && time >= 0) {
+      const audioDuration = audioRef.current.duration;
+      // Only seek if duration is available and time is within bounds
+      if (audioDuration && isFinite(audioDuration) && audioDuration > 0) {
+        const clampedTime = Math.max(0, Math.min(time, audioDuration));
+        audioRef.current.currentTime = clampedTime;
+        setProgress(clampedTime);
+      } else {
+        // If duration not available, still try to seek but clamp to reasonable value
+        const clampedTime = Math.max(0, time);
+        audioRef.current.currentTime = clampedTime;
+        setProgress(clampedTime);
+      }
     }
   }, []);
 
@@ -373,7 +441,16 @@ export function PlayerProvider({ children }) {
             setCurrentTime(time);
           }
         }}
-        onDurationChange={() => audioRef.current && setDuration(audioRef.current.duration)}
+        onLoadedMetadata={() => {
+          if (audioRef.current && audioRef.current.duration && isFinite(audioRef.current.duration)) {
+            setDuration(audioRef.current.duration);
+          }
+        }}
+        onDurationChange={() => {
+          if (audioRef.current && audioRef.current.duration && isFinite(audioRef.current.duration)) {
+            setDuration(audioRef.current.duration);
+          }
+        }}
         onEnded={() => {
           setIsPlaying(false);
           // Auto-play next track if queue has items

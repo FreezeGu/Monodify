@@ -1,8 +1,26 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// Build timestamp so deployed version can be verified (no-cache for index.html)
+const buildId = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
 export default defineConfig({
-  plugins: [react()],
+  define: {
+    __BUILD_ID__: JSON.stringify(buildId),
+  },
+  plugins: [
+    react(),
+    // Inject build id into built index.html for cache verification
+    {
+      name: 'inject-build-id',
+      transformIndexHtml(html) {
+        return html.replace(
+          /<meta name="version" content="[^"]*"\s*\/?>/,
+          `<meta name="version" content="${buildId}" />`
+        );
+      },
+    },
+  ],
   server: {
     port: 5173,
     proxy: {

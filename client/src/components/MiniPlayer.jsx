@@ -1,14 +1,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { usePlayer } from '../context/PlayerContext';
+import LiquidGlassSlider from './LiquidGlassSlider';
 
 export default function MiniPlayer() {
-  const { currentTrack, isPlaying, togglePlay, openFullScreen, nextTrack, previousTrack } = usePlayer();
+  const { currentTrack, isPlaying, togglePlay, openFullScreen, nextTrack, previousTrack, progress, duration, seek, audioRef } = usePlayer();
   if (!currentTrack) return null;
 
   const art = currentTrack.artworkUrl || currentTrack.albumArt || '';
   const title = currentTrack.title || 'Unknown';
   const artist = currentTrack.artist || 'Unknown Artist';
+  // Get duration from audio element, fallback to state
+  const audioDuration = audioRef?.current?.duration;
+  const actualDuration = (duration > 0 && isFinite(duration)) 
+    ? duration 
+    : (audioDuration && isFinite(audioDuration) && audioDuration > 0 ? audioDuration : 0);
+  const progressValue = actualDuration > 0 ? Math.min(1, progress / actualDuration) : 0;
 
   return (
     <motion.div
@@ -24,7 +31,6 @@ export default function MiniPlayer() {
       aria-label="Open player"
     >
       <div className="glass-container glass-container--inline glass-container--mini">
-        {/* Glass layers: filter (backdrop + distortion) → overlay → specular → content */}
         <div className="glass-filter"></div>
         <div className="glass-overlay"></div>
         <div className="glass-specular"></div>
@@ -36,6 +42,32 @@ export default function MiniPlayer() {
                 <h3 className="player__legend__title">{title}</h3>
                 <span className="player__legend__sub-title">{artist}</span>
               </div>
+            </div>
+
+            {/* Apple liquid glass progress bar — scrubbable on iPhone */}
+            <div
+              className="mini-player-progress-wrap"
+              onClick={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              style={{ width: '100%', padding: '0 12px', marginBottom: 8 }}
+            >
+              <LiquidGlassSlider
+                value={progressValue}
+                onChange={(v) => {
+                  // Get duration from audio element, fallback to state
+                  const audioDuration = audioRef?.current?.duration;
+                  const actualDuration = (duration > 0 && isFinite(duration)) 
+                    ? duration 
+                    : (audioDuration && isFinite(audioDuration) && audioDuration > 0 ? audioDuration : 0);
+                  
+                  if (actualDuration > 0 && isFinite(actualDuration)) {
+                    const seekTime = v * actualDuration;
+                    if (seekTime >= 0 && isFinite(seekTime)) {
+                      seek(seekTime);
+                    }
+                  }
+                }}
+              />
             </div>
 
             <div className="player__controls">

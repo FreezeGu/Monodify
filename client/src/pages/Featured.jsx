@@ -625,7 +625,7 @@ export default function Featured() {
                   <GlassCard
                     key={genre.id}
                     hoverable
-                    onClick={() => push(`/search/results?q=${encodeURIComponent(genre.name)}`)}
+                    onClick={() => push(genre.name === 'Nasheeds' ? '/search/results?browse=nasheeds' : genre.name === 'Poems' ? '/search/results?browse=poems' : `/search/results?q=${encodeURIComponent(genre.name)}`)}
                     style={{
                       padding: 20,
                       minHeight: 120,

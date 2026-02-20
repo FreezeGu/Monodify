@@ -8,6 +8,7 @@ import ScreenLayout from '../components/ScreenLayout';
 import SearchBar from '../components/SearchBar';
 import GlassCard from '../components/GlassCard';
 import GlassListRow from '../components/GlassListRow';
+import LazyImage from '../components/LazyImage';
 import NasheedContextMenu from '../components/NasheedContextMenu';
 import { AnimatePresence } from 'framer-motion';
 
@@ -18,16 +19,59 @@ export default function SearchResults() {
   const { push } = useTabNavigation();
   const { setCurrentTrack } = usePlayer();
   const queryParam = searchParams.get('q') || '';
+  const browseParam = searchParams.get('browse') || ''; // 'nasheeds' | 'poems'
   const [activeFilter, setActiveFilter] = useState('All');
   const [results, setResults] = useState({ songs: [], albums: [], artists: [] });
   const [loading, setLoading] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
 
   useEffect(() => {
-    if (queryParam.trim()) {
+    if (browseParam === 'nasheeds' || browseParam === 'poems') {
+      performBrowse(browseParam);
+    } else if (queryParam.trim()) {
       performSearch(queryParam);
     }
-  }, [queryParam]);
+  }, [queryParam, browseParam]);
+
+  const performBrowse = async (browse) => {
+    setLoading(true);
+    try {
+      let allNasheeds = [];
+      try {
+        const nasheedsQuery = query(
+          collection(db, 'nasheeds'),
+          where('status', '==', 'approved'),
+          limit(300)
+        );
+        const nasheedsSnapshot = await getDocs(nasheedsQuery);
+        allNasheeds = nasheedsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        const nasheedsSnapshot = await getDocs(query(collection(db, 'nasheeds'), limit(300)));
+        allNasheeds = nasheedsSnapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter(n => n.status === 'approved');
+      }
+      const isPoem = (n) => n.isPoem === true;
+      const filteredNasheeds = browse === 'poems'
+        ? allNasheeds.filter((n) => n.isPoem === true)
+        : allNasheeds.filter((n) => n.isPoem !== true);
+      const artists = Array.from(
+        new Set(filteredNasheeds.map((n) => n.artist).filter(Boolean))
+      ).map((artistName) => {
+        const artistNasheeds = filteredNasheeds.filter((n) => n.artist === artistName);
+        return {
+          id: artistName.toLowerCase().replace(/\s+/g, '-'),
+          name: artistName,
+          image: artistNasheeds[0]?.imageUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop',
+          nasheedCount: artistNasheeds.length,
+        };
+      });
+      setResults({ songs: filteredNasheeds, albums: [], artists });
+    } catch (err) {
+      console.error('Browse error:', err);
+    }
+    setLoading(false);
+  };
 
   const performSearch = async (searchQuery) => {
     setLoading(true);
@@ -100,11 +144,13 @@ export default function SearchResults() {
 
   const displayResults = filteredResults();
 
+  const pageTitle = browseParam === 'nasheeds' ? 'All Nasheeds' : browseParam === 'poems' ? 'All Poems' : (queryParam || 'Search');
+
   return (
-    <ScreenLayout title={queryParam || 'Search'}>
+    <ScreenLayout title={pageTitle}>
       <div style={{ paddingTop: 16 }}>
         <div style={{ marginBottom: 24 }}>
-          <SearchBar onSearch={handleSearch} placeholder="Artists, songs, albums..." defaultValue={queryParam} />
+          <SearchBar onSearch={handleSearch} placeholder="Artists, songs, albums..." defaultValue={browseParam ? '' : queryParam} />
         </div>
 
         {loading ? (
@@ -135,7 +181,7 @@ export default function SearchResults() {
                     <GlassListRow
                       key={song.id}
                       leftContent={
-                        <img
+                        <LazyImage
                           src={song.imageUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'}
                           alt={song.title}
                           style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover' }}

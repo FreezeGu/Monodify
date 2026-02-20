@@ -573,7 +573,7 @@ export default function UploadNasheed() {
             )}
 
             <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--secondary-text)' }}>
-              Genre *
+              Genre {formData.isPoem ? '(optional for poems)' : '*'}
             </label>
             <select
               value={formData.genre}
@@ -618,7 +618,7 @@ export default function UploadNasheed() {
               <GlassButton variant="secondary" onClick={() => setStep(1)} style={{ flex: 1 }}>
                 Back
               </GlassButton>
-              <GlassButton onClick={() => setStep(3)} disabled={!formData.title || !formData.artist || !formData.genre} style={{ flex: 1 }}>
+              <GlassButton onClick={() => setStep(3)} disabled={!formData.title || !formData.artist || (!formData.genre && !formData.isPoem)} style={{ flex: 1 }}>
                 Next: Cover Image
               </GlassButton>
             </div>

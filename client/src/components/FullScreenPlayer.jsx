@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTabNavigation } from '../context/TabNavigationContext';
 import { usePlayer } from '../context/PlayerContext';
 import LiquidGlassToggle from './LiquidGlassToggle';
+import LiquidGlassSlider from './LiquidGlassSlider';
 import SynchronizedLyrics from './SynchronizedLyrics';
 import AddToPlaylist from './AddToPlaylist';
 
@@ -329,28 +330,32 @@ export default function FullScreenPlayer() {
           </motion.button>
         </div>
 
-        {/* Liquid glass slider — progress */}
+        {/* Apple liquid glass progress bar — draggable, touch-friendly */}
         <div style={{ width: '100%', marginBottom: 16 }}>
-          <div
-            className="liquid-glass-slider-track"
-            role="slider"
-            aria-valuenow={progress}
-            aria-valuemin={0}
-            aria-valuemax={duration || 100}
-            tabIndex={0}
-            style={{ cursor: 'pointer' }}
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = (e.clientX - rect.left) / rect.width;
-              seek(x * duration);
+          <LiquidGlassSlider
+            value={(() => {
+              // Get duration from audio element, fallback to state
+              const audioDuration = audioRef.current?.duration;
+              const actualDuration = (duration > 0 && isFinite(duration)) 
+                ? duration 
+                : (audioDuration && isFinite(audioDuration) && audioDuration > 0 ? audioDuration : 0);
+              return actualDuration > 0 ? Math.min(1, progress / actualDuration) : 0;
+            })()}
+            onChange={(v) => {
+              // Get duration from audio element, fallback to state
+              const audioDuration = audioRef.current?.duration;
+              const actualDuration = (duration > 0 && isFinite(duration)) 
+                ? duration 
+                : (audioDuration && isFinite(audioDuration) && audioDuration > 0 ? audioDuration : 0);
+              
+              if (actualDuration > 0 && isFinite(actualDuration)) {
+                const seekTime = v * actualDuration;
+                if (seekTime >= 0 && isFinite(seekTime)) {
+                  seek(seekTime);
+                }
+              }
             }}
-          >
-            <motion.div className="liquid-glass-slider-fill" style={{ width: `${progressPercent}%` }} layout />
-            <span
-              className="liquid-glass-slider-thumb"
-              style={{ left: `calc(${progressPercent}% - 9px)` }}
-            />
-          </div>
+          />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--secondary-text)', marginTop: 6 }}>
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(duration)}</span>
@@ -434,36 +439,6 @@ export default function FullScreenPlayer() {
                 <line x1="4" y1="4" x2="9" y2="9"></line>
               </svg>
             </button>
-          </div>
-        </div>
-
-        {/* Volume & Output */}
-        <div style={{ width: '100%', marginTop: 'auto', paddingTop: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-            </svg>
-            <div
-              className="liquid-glass-slider-track"
-              role="slider"
-              aria-valuenow={volume * 100}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              tabIndex={0}
-              style={{ flex: 1, cursor: 'pointer' }}
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = (e.clientX - rect.left) / rect.width;
-                setVolume(Math.max(0, Math.min(1, x)));
-              }}
-            >
-              <motion.div className="liquid-glass-slider-fill" style={{ width: `${volume * 100}%` }} layout />
-              <span
-                className="liquid-glass-slider-thumb"
-                style={{ left: `calc(${volume * 100}% - 9px)` }}
-              />
-            </div>
           </div>
         </div>
 

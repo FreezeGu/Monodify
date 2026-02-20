@@ -8,6 +8,7 @@ import ScreenLayout from '../components/ScreenLayout';
 import GlassListRow from '../components/GlassListRow';
 import GlassButton from '../components/GlassButton';
 import SwipeablePlaylistRow from '../components/SwipeablePlaylistRow';
+import LazyImage from '../components/LazyImage';
 
 export default function PlaylistPage() {
   const { id } = useParams();
@@ -185,19 +186,19 @@ export default function PlaylistPage() {
     }
   };
 
+  const normalizeTrack = (song) => ({
+    ...song,
+    audioUrl: song.audioUrl,
+    lyrics: song.lyrics,
+    artworkUrl: song.imageUrl || song.image || song.artworkUrl,
+    imageUrl: song.imageUrl || song.image || song.artworkUrl,
+  });
+
   const handlePlay = () => {
     if (playlist?.songs && playlist.songs.length > 0) {
-      const tracks = playlist.songs.map(song => ({
-        ...song,
-        audioUrl: song.audioUrl,
-        lyrics: song.lyrics,
-      }));
-      
-      // Clear queue and add all playlist songs
+      const tracks = playlist.songs.map(normalizeTrack);
       clearQueue();
       tracks.slice(1).forEach(track => addToQueue(track));
-      
-      // Play first track
       const firstTrack = tracks[0];
       setCurrentTrack(firstTrack);
       play(firstTrack);
@@ -206,17 +207,9 @@ export default function PlaylistPage() {
 
   const handleShuffle = () => {
     if (playlist?.songs && playlist.songs.length > 0) {
-      const tracks = [...playlist.songs].sort(() => Math.random() - 0.5).map(song => ({
-        ...song,
-        audioUrl: song.audioUrl,
-        lyrics: song.lyrics,
-      }));
-      
-      // Clear queue and add shuffled songs
+      const tracks = [...playlist.songs].sort(() => Math.random() - 0.5).map(normalizeTrack);
       clearQueue();
       tracks.slice(1).forEach(track => addToQueue(track));
-      
-      // Play first shuffled track
       const firstTrack = tracks[0];
       setCurrentTrack(firstTrack);
       play(firstTrack);
@@ -303,7 +296,7 @@ export default function PlaylistPage() {
                   <SwipeablePlaylistRow
                     key={track.id || index}
                     leftContent={
-                      <img
+                      <LazyImage
                         src={track.imageUrl || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'}
                         alt={track.title}
                         style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover' }}
@@ -311,7 +304,7 @@ export default function PlaylistPage() {
                     }
                     rightContent={<span className="text-tertiary" style={{ fontSize: 13 }}>{track.duration || '0:00'}</span>}
                     onClick={() => {
-                      setCurrentTrack({ ...track, lyrics: track.lyrics });
+                      setCurrentTrack(normalizeTrack({ ...track, lyrics: track.lyrics }));
                     }}
                     onRemove={() => handleRemoveFromPlaylist(track)}
                   >
@@ -322,7 +315,7 @@ export default function PlaylistPage() {
                   <GlassListRow
                     key={track.id || index}
                     leftContent={
-                      <img
+                      <LazyImage
                         src={track.imageUrl || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'}
                         alt={track.title}
                         style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover' }}
@@ -330,7 +323,7 @@ export default function PlaylistPage() {
                     }
                     rightContent={<span className="text-tertiary" style={{ fontSize: 13 }}>{track.duration || '0:00'}</span>}
                     onClick={() => {
-                      setCurrentTrack({ ...track, lyrics: track.lyrics });
+                      setCurrentTrack(normalizeTrack({ ...track, lyrics: track.lyrics }));
                     }}
                   >
                     <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{track.title}</div>

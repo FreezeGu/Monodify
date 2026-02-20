@@ -15,8 +15,11 @@
   <meta name="msapplication-TileColor" content="#000000" />
   <meta name="msapplication-navbutton-color" content="#000000" />
   
+  <!-- Fix Cross-Origin-Opener-Policy for Firebase Auth popup -->
+  <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups" />
+  
   <!-- Version meta tag for cache busting -->
-  <meta name="version" content="1.0.0" />
+  <meta name="version" content="2026-02-19T10-06-59" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -38,10 +41,18 @@
   <link href="https://fonts.cdnfonts.com/css/freebooter-script" rel="stylesheet" />
   <!-- Magisans font for body text -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
-  <script type="module" crossorigin src="/assets/index.ShrvaDLv.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index.CpfwPmKD.css">
+  <script type="module" crossorigin src="/assets/index.BB1oY-PS.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index.DcxE-FAq.css">
 </head>
 <body>
+  <!-- SVG filter for Apple liquid glass slider thumb (used by LiquidGlassSlider) -->
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <filter id="mini-liquid-lens" x="-50%" y="-50%" width="200%" height="200%">
+      <feImage x="0" y="0" result="normalMap" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3CradialGradient id='invmap' cx='50%25' cy='50%25' r='75%25'%3E%3Cstop offset='0%25' stop-color='rgb(128,128,255)'/%3E%3Cstop offset='90%25' stop-color='rgb(255,255,255)'/%3E%3C/radialGradient%3E%3Crect width='100%25' height='100%25' fill='url(%23invmap)'/%3E%3C/svg%3E" />
+      <feDisplacementMap in="SourceGraphic" in2="normalMap" scale="-252" xChannelSelector="R" yChannelSelector="G" result="displaced" />
+      <feMerge><feMergeNode in="displaced" /></feMerge>
+    </filter>
+  </svg>
   <div id="root"></div>
 </body>
 </html>

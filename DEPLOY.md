@@ -1,6 +1,12 @@
 # Deploying the latest version to Firebase Hosting
 
-If the live site doesn’t show your latest changes, use a **clean build** then deploy.
+If the live site doesn’t show your latest changes, **always do a clean build first**, then deploy.
+
+## Important: don’t run only `firebase deploy`
+
+Running just `firebase deploy` uploads whatever is **already** in `client/dist`. If you haven’t rebuilt recently, that’s an **old** build, so the live site stays on the old version. **Always use one of the options below** so a fresh build is created before deploy.
+
+---
 
 ## Option 1: From project root (recommended)
 
@@ -24,27 +30,29 @@ This cleans `client\dist`, builds the client, then deploys.
 
 ## Option 3: Manual steps
 
-1. **Clean and build the client**
-   - Delete the folder `client/dist` (if it exists).
-   - In a terminal:
-     ```bash
-     cd client
-     npm install
-     npm run build
-     cd ..
-     ```
-2. **Deploy**
+1. **Delete** the folder `client/dist` completely (if it exists).
+2. **Build:**
+   ```bash
+   cd client
+   npm install
+   npm run build
+   cd ..
+   ```
+3. **Deploy:**
    ```bash
    firebase deploy --only hosting
    ```
 
-## After deploying
+---
 
-- **Hard refresh** the site: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac).
-- Or open the site in an **incognito/private** window.
-- Firebase’s CDN can take 1–2 minutes to update; wait a bit and refresh again if needed.
+## How to verify the new version is live
 
-## Don’t
+1. Open your Hosting URL (e.g. `https://monody-nasheeds.web.app`).
+2. **Hard refresh:** `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac).  
+   Or open the site in an **incognito/private** window.
+3. Open **Developer Tools** (F12) → **Console** tab.  
+   You should see: `Monodify build: 2025-02-15T12-30-00` (or similar).  
+   That timestamp is from when the app was **built**; if it matches your latest deploy, the new version is loading.
+4. Alternatively, **View Page Source** (Ctrl+U) and look at the `<meta name="version" content="...">` tag. That value is the same build id.
 
-- Run only `firebase deploy` without building first — that deploys whatever is already in `client/dist`, which may be old.
-- Rely on `npm run build` without deleting `client/dist` first if you’re unsure; `npm run deploy` or `deploy.bat` do a clean build for you.
+If you still see an old build id after a few minutes, wait 1–2 minutes for Firebase’s CDN to update, then hard refresh again.
