@@ -256,7 +256,8 @@ export function PlayerProvider({ children }) {
     if (audioRef.current && isFinite(time) && time >= 0) {
       const audioDuration = audioRef.current.duration;
       // Only seek if duration is available and time is within bounds
-      if (audioDuration && isFinite(audioDuration) && audioDuration > 0) {
+      // Check explicitly for null/undefined instead of truthiness to handle duration === 0 correctly
+      if (audioDuration != null && isFinite(audioDuration) && audioDuration > 0) {
         const clampedTime = Math.max(0, Math.min(time, audioDuration));
         audioRef.current.currentTime = clampedTime;
         setProgress(clampedTime);
@@ -442,12 +443,12 @@ export function PlayerProvider({ children }) {
           }
         }}
         onLoadedMetadata={() => {
-          if (audioRef.current && audioRef.current.duration && isFinite(audioRef.current.duration)) {
+          if (audioRef.current && audioRef.current.duration != null && isFinite(audioRef.current.duration)) {
             setDuration(audioRef.current.duration);
           }
         }}
         onDurationChange={() => {
-          if (audioRef.current && audioRef.current.duration && isFinite(audioRef.current.duration)) {
+          if (audioRef.current && audioRef.current.duration != null && isFinite(audioRef.current.duration)) {
             setDuration(audioRef.current.duration);
           }
         }}
